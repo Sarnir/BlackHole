@@ -5,6 +5,7 @@ using DG.Tweening;
 public class PlayerController : MonoBehaviour
 {
     Rigidbody2D rb;
+    SpriteRenderer sr;
     Collider2D coll2d;
     public Transform blackHole;
     public float startVelocity;
@@ -21,7 +22,7 @@ public class PlayerController : MonoBehaviour
     Vector2 initialRight;
 
     float initialDrag;
-
+    
     GameObject[] EngineParticles;
     GameObject[] BurstParticles;
     GameObject[] ShipParticles;
@@ -37,6 +38,7 @@ public class PlayerController : MonoBehaviour
     {
         Random.seed = 1;
         rb = GetComponent<Rigidbody2D>();
+        sr = GetComponent<SpriteRenderer>();
         coll2d = GetComponent<Collider2D>();
         initialDrag = rb.drag;
         initialPos = transform.position;
@@ -274,5 +276,10 @@ public class PlayerController : MonoBehaviour
             else
                 particle.transform.DOScale(Vector3.zero, dyingDuration);
         }
+    }
+
+    public void SetSkin(Color skin)
+    {
+        sr.color = skin;
     }
 }

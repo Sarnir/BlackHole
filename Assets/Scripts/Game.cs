@@ -18,19 +18,18 @@ public class Game : MonoBehaviour
     // Menus
     public RectTransform MainMenu;
     public RectTransform ShopMenu;
-    public RectTransform HUD;
 
-    public BlackHole blackHole;
-    public PlayerController player;
+    public Camera BackgroundCamera;
+    public BlackHole BlackHole;
+    public PlayerController Player;
     public GameObject Curtain;
     public GameObject StarPrefab;
     public GameObject AsteroidPrefab;
     public Diamond Diamond;
-    public Text MainText;
+    public Text PointsText;
     public Text RestartText;
     public Text HiScoreText;
     public Text DiamondsText;
-    public string startText = "Tap to start";
 
     public float CameraMinRadius;
     public float CameraMaxRadius;
@@ -38,6 +37,9 @@ public class Game : MonoBehaviour
     public float CameraChangeScreenXPercentage;
 
     public float MaxStars;
+
+    public Color[] BackgroundColors;
+    int currentColor;
 
     GameState gameState;
 
@@ -50,7 +52,7 @@ public class Game : MonoBehaviour
     int points;
     int hiScore;
     int diamonds;
-
+    
     Vector3 cameraPos;
     List<GameObject> spawnedAsteroids;
     
@@ -74,11 +76,11 @@ public class Game : MonoBehaviour
         SetInitialState();
         Curtain.transform.DOScale(0f, 1f).SetEase(Ease.InCubic);
 
-        player.OnCollisionWithDiamond += AddDiamond;
+        Player.OnCollisionWithDiamond += AddDiamond;
 
-        blackHole.range = CameraMaxRadius * screenRatio;
+        BlackHole.range = CameraMaxRadius * screenRatio;
 
-        MainText.transform.DOShakePosition(20f, 5f, 1, 90).SetEase(Ease.Linear).SetLoops(-1);
+        PointsText.transform.DOShakePosition(20f, 5f, 1, 90).SetEase(Ease.Linear).SetLoops(-1);
         UpdateDiamondsText();
 
         // background already baked to prefab, so commenting this out
@@ -103,7 +105,7 @@ public class Game : MonoBehaviour
             var scale = Random.Range(0.5f, 1f);
 
             var q = Quaternion.AngleAxis(angle, Vector3.forward);
-            var distance = blackHole.range * Random.Range(0.9f, 1.1f);
+            var distance = BlackHole.range * Random.Range(0.9f, 1.1f);
             var pos = q * Vector3.right * distance;
 
             var newAsteroid = Instantiate(AsteroidPrefab);
@@ -118,7 +120,7 @@ public class Game : MonoBehaviour
             .SetLoops(-1);
     }
 
-    void SetInitialState()
+    public void SetInitialState(bool resetPlayer = true)
     {
         Debug.Log("Initial state entered.");
         MainMenu.gameObject.SetActive(true);
@@ -126,9 +128,15 @@ public class Game : MonoBehaviour
 
         gameState = GameState.Initial;
         Camera.main.transform.position = cameraPos;
-        player.Reset();
-        blackHole.Reset();
-        MainText.text = startText;
+        currentColor = 0;
+        SetNewBackgroundColor();
+
+        if (resetPlayer)
+            Player.Reset();
+
+        BlackHole.Reset();
+        Diamond.Disappear();
+        PointsText.text = "";
         RestartText.gameObject.SetActive(false);
         HiScoreText.DOFade(1f, 0f);
         HiScoreText.text = "Highscore: " + hiScore;
@@ -139,18 +147,29 @@ public class Game : MonoBehaviour
         }
     }
 
-    void AddDiamond()
+    void SetDiamonds(int diamondNum)
     {
-        Debug.Log("Diamond added!");
-        diamonds++;
+        diamonds = diamondNum;
         PlayerPrefs.SetInt("DIAMONDS", diamonds);
 
         UpdateDiamondsText();
     }
 
+    public void AddDiamond()
+    {
+        SetDiamonds(diamonds + 1);
+    }
+
+    public void ReduceDiamonds(int quantity)
+    {
+        SetDiamonds(diamonds - quantity);
+    }
+
     void UpdateDiamondsText()
     {
         DiamondsText.text = diamonds.ToString();
+        DiamondsText.rectTransform.DOScale(1.2f, 0.3f).OnComplete(() =>
+        DiamondsText.rectTransform.DOScale(1f, 0.3f));
     }
 
     void Update ()
@@ -165,22 +184,25 @@ public class Game : MonoBehaviour
                 if (timePassed > 1f)
                 {
                     // TODO: object pooling zamiast instantiate :/
-                    SpawnAsteroid(Random.Range(3f, blackHole.range));
+                    SpawnAsteroid(Random.Range(3f, BlackHole.range));
                     timePassed -= 1f;
                 }
 
-                if (player.isDead)
+                if (Player.isDead)
                 {
                     GameOver();
                 }
-                else if(!player.isDying)
+                else if(!Player.isDying)
                 {
-                    var playerAngle = player.transform.rotation.z;
+                    var playerAngle = Player.transform.rotation.z;
                     if (lastPlayerAngle > startAngle && playerAngle <= startAngle)
                     {
                         points++;
-                        MainText.text = points.ToString();
+                        PointsText.text = points.ToString();
                         SpawnDiamond();
+
+                        if (points > 0 && points % 5 == 0)
+                            SetNewBackgroundColor();
                     }
 
                     lastPlayerAngle = playerAngle;
@@ -197,6 +219,16 @@ public class Game : MonoBehaviour
         UpdateCameraSize();
     }
 
+    void SetNewBackgroundColor()
+    {
+        if (currentColor >= BackgroundColors.Length)
+            currentColor = 0;
+
+        BackgroundCamera.DOColor(BackgroundColors[currentColor], 0.5f);
+
+        currentColor++;
+    }
+
     public void GoToShop()
     {
         Debug.Log("Shop button clicked!");
@@ -204,7 +236,6 @@ public class Game : MonoBehaviour
 
         ShopMenu.gameObject.SetActive(true);
         MainMenu.gameObject.SetActive(false);
-        HUD.gameObject.SetActive(false);
     }
 
     public void OnScreenTap()
@@ -217,12 +248,12 @@ public class Game : MonoBehaviour
                 break;
 
             case GameState.Shop:
-                ResetScene();
+                SetInitialState(false);
                 break;
-
+                
             case GameState.Gameplay:
-                if (!player.isDying)
-                    player.SpeedUp();
+                if (!Player.isDying)
+                    Player.SpeedUp();
                 break;
 
             case GameState.GameOver:
@@ -236,7 +267,7 @@ public class Game : MonoBehaviour
 
     private void SpawnDiamond()
     {
-        Diamond.AppearAtPosition(RandomOnCircle(Vector2.zero, Random.Range(3f, blackHole.range - 2f)));
+        Diamond.AppearAtPosition(RandomOnCircle(Vector2.zero, Random.Range(3f, BlackHole.range - 2f)));
     }
 
     void StartGame()
@@ -246,12 +277,12 @@ public class Game : MonoBehaviour
 
         timePassed = 0f;
         gameState = GameState.Gameplay;
-        blackHole.StartGrowing();
-        player.StartGame();
-        startAngle = player.transform.rotation.z;
+        BlackHole.StartGrowing();
+        Player.StartGame();
+        startAngle = Player.transform.rotation.z;
         lastPlayerAngle = startAngle;
         points = 0;
-        MainText.text = points.ToString();
+        PointsText.text = points.ToString();
         HiScoreText.DOFade(0f, 0.4f);
 
         for (int i = 1; i < 6; i++)
@@ -297,6 +328,8 @@ public class Game : MonoBehaviour
 
     void SpawnAsteroid(float radius)
     {
+        return;
+
         var asteroid = Instantiate(AsteroidPrefab);
         var rb = asteroid.AddComponent<Rigidbody2D>();
         var sr = asteroid.GetComponent<SpriteRenderer>();
@@ -326,7 +359,7 @@ public class Game : MonoBehaviour
     void UpdateCameraSize()
     {
         float border = Camera.main.orthographicSize * 2 * screenRatio * CameraChangeScreenXPercentage;
-        float playerDistance = player.transform.position.magnitude + border;
+        float playerDistance = Player.transform.position.magnitude + border;
 
         Camera.main.orthographicSize = Mathf.Clamp(Mathf.Max(playerDistance / screenRatio, playerDistance), CameraMinRadius, CameraMaxRadius);
 
@@ -346,8 +379,8 @@ public class Game : MonoBehaviour
         return pos;
     }
 
-    public void OnBuyClick(int element)
+    public void SetPlayerSkin(Color color)
     {
-        Debug.Log("Bought " + element);
+        Player.SetSkin(color);
     }
 }

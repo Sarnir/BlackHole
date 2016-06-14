@@ -18,7 +18,7 @@ public class Diamond : MonoBehaviour
         Disappear(null);
     }
 
-    public void Disappear(Action OnCompleted)
+    public void Disappear(Action OnCompleted = null)
     {
         var anim = transform.DOScale(0f, 0.3f).SetEase(Ease.InBack);
 
