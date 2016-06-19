@@ -17,7 +17,7 @@ public class Game : MonoBehaviour
 
     // Menus
     public RectTransform MainMenu;
-    public RectTransform ShopMenu;
+    public Shop ShopMenu;
 
     public Camera BackgroundCamera;
     public BlackHole BlackHole;
@@ -72,6 +72,8 @@ public class Game : MonoBehaviour
         
         var curtainScale = GetLocalScale();
         Curtain.transform.localScale = new Vector2(curtainScale, curtainScale);
+
+        ShopMenu.Init();
 
         SetInitialState();
         Curtain.transform.DOScale(0f, 1f).SetEase(Ease.InCubic);
@@ -165,6 +167,11 @@ public class Game : MonoBehaviour
         SetDiamonds(diamonds - quantity);
     }
 
+    public int GetDiamonds()
+    {
+        return diamonds;
+    }
+
     void UpdateDiamondsText()
     {
         DiamondsText.text = diamonds.ToString();
@@ -212,6 +219,11 @@ public class Game : MonoBehaviour
             case GameState.GameOver:
                 break;
 
+            case GameState.Shop:
+                if (Input.GetKeyDown(KeyCode.Escape))
+                    OnScreenTap();
+                break;
+
             default:
                 break;
         }
@@ -234,7 +246,7 @@ public class Game : MonoBehaviour
         Debug.Log("Shop button clicked!");
         gameState = GameState.Shop;
 
-        ShopMenu.gameObject.SetActive(true);
+        ShopMenu.Enter();
         MainMenu.gameObject.SetActive(false);
     }
 
@@ -328,7 +340,7 @@ public class Game : MonoBehaviour
 
     void SpawnAsteroid(float radius)
     {
-        return;
+        //return;
 
         var asteroid = Instantiate(AsteroidPrefab);
         var rb = asteroid.AddComponent<Rigidbody2D>();
@@ -358,6 +370,9 @@ public class Game : MonoBehaviour
 
     void UpdateCameraSize()
     {
+        if (Player.isDead)
+            return;
+
         float border = Camera.main.orthographicSize * 2 * screenRatio * CameraChangeScreenXPercentage;
         float playerDistance = Player.transform.position.magnitude + border;
 
