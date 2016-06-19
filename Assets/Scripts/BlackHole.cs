@@ -5,7 +5,6 @@ using DG.Tweening;
 public class BlackHole : MonoBehaviour
 {
     public float range = 10f;
-    public float startingMass;
     public float massGrowingFactor;
     public Vector3 scaleGrowingFactor;
     
@@ -57,7 +56,7 @@ public class BlackHole : MonoBehaviour
         if (isGrowing)
         {
             ownRb.mass += massGrowingFactor;
-            //transform.localScale += scaleGrowingFactor;
+            transform.localScale += scaleGrowingFactor;
         }
     }
 

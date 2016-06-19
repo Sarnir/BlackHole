@@ -18,6 +18,10 @@ public class PlayerController : MonoBehaviour
     public int BurstParticlesMax;
     public int ShipParticlesMax;
 
+    public AudioClip BurstClip;
+    public AudioClip BoomClip;
+    public AudioClip HoleClip;
+
     Vector2 initialPos;
     Vector2 initialRight;
 
@@ -179,6 +183,8 @@ public class PlayerController : MonoBehaviour
     {
         if (IsAlive)
         {
+            if (PlayerPrefs.GetInt("SFX", 1) == 1)
+                AudioSource.PlayClipAtPoint(BurstClip, Camera.main.transform.position);
             rb.velocity += (Vector2)transform.up * speedFactor;
             StartParticleBurst();
         }
@@ -237,6 +243,8 @@ public class PlayerController : MonoBehaviour
 
     void CollisionWithBlackHole()
     {
+        if (PlayerPrefs.GetInt("SFX", 1) == 1)
+            AudioSource.PlayClipAtPoint(HoleClip, Camera.main.transform.position);
         float dyingDuration = 2f;
         SetDying();
         transform.DORotate(transform.rotation.eulerAngles - new Vector3(0f, 0f, 720f), dyingDuration, RotateMode.FastBeyond360).SetEase(Ease.Linear);
@@ -248,6 +256,8 @@ public class PlayerController : MonoBehaviour
 
     void CollisionWithAsteroid()
     {
+        if (PlayerPrefs.GetInt("SFX", 1) == 1)
+            AudioSource.PlayClipAtPoint(BoomClip, Camera.main.transform.position);
         transform.localScale = Vector3.zero;
 
         Camera.main.DOShakePosition(1f);

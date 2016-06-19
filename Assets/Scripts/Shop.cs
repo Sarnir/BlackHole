@@ -34,6 +34,7 @@ public class Shop : MonoBehaviour
 
     public void OnBuyClick(int element)
     {
+        Game.PlayClickSound();
         if (!skinsBought[element])
         {
             Debug.Log("Bought " + element);

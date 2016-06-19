@@ -41,6 +41,11 @@ public class Game : MonoBehaviour
     public Color[] BackgroundColors;
     int currentColor;
 
+    public AudioClip ClickClip;
+    public AudioClip DiamondClip;
+
+    AudioSource musicSource;
+
     GameState gameState;
 
     float lastPlayerAngle;
@@ -63,6 +68,7 @@ public class Game : MonoBehaviour
         gameState = GameState.Initial;
         hiScore = PlayerPrefs.GetInt("HI_SCORE", 0);
         diamonds = PlayerPrefs.GetInt("DIAMONDS", 0);
+        musicSource = GetComponent<AudioSource>();
 
         // camera initials
         screenRatio = Screen.width / (float)Screen.height;
@@ -159,6 +165,8 @@ public class Game : MonoBehaviour
 
     public void AddDiamond()
     {
+        if (PlayerPrefs.GetInt("SFX", 1) == 1)
+            AudioSource.PlayClipAtPoint(DiamondClip, Camera.main.transform.position);
         SetDiamonds(diamonds + 1);
     }
 
@@ -177,6 +185,20 @@ public class Game : MonoBehaviour
         DiamondsText.text = diamonds.ToString();
         DiamondsText.rectTransform.DOScale(1.2f, 0.3f).OnComplete(() =>
         DiamondsText.rectTransform.DOScale(1f, 0.3f));
+    }
+
+    public void ToggleSFX()
+    {
+        if(PlayerPrefs.GetInt("SFX", 1) == 1)
+        {
+            PlayerPrefs.SetInt("SFX", 0);
+            musicSource.volume = 0f;
+        }
+        else
+        {
+            PlayerPrefs.SetInt("SFX", 1);
+            musicSource.volume = 0.5f;
+        }
     }
 
     void Update ()
@@ -244,6 +266,7 @@ public class Game : MonoBehaviour
     public void GoToShop()
     {
         Debug.Log("Shop button clicked!");
+        PlayClickSound();
         gameState = GameState.Shop;
 
         ShopMenu.Enter();
@@ -256,10 +279,12 @@ public class Game : MonoBehaviour
         switch (gameState)
         {
             case GameState.Initial:
+                PlayClickSound();
                 StartGame();
                 break;
 
             case GameState.Shop:
+                PlayClickSound();
                 SetInitialState(false);
                 break;
                 
@@ -269,12 +294,19 @@ public class Game : MonoBehaviour
                 break;
 
             case GameState.GameOver:
+                PlayClickSound();
                 ResetScene();
                 break;
 
             default:
                 break;
         }
+    }
+
+    public void PlayClickSound()
+    {
+        if (PlayerPrefs.GetInt("SFX", 1) == 1)
+            AudioSource.PlayClipAtPoint(ClickClip, Camera.main.transform.position);
     }
 
     private void SpawnDiamond()
@@ -380,7 +412,7 @@ public class Game : MonoBehaviour
 
         // adjust vortex effect
         VortexRadius = vortexSizeFactor / Camera.main.orthographicSize;
-        vortexEffect.radius = new Vector2(VortexRadius, VortexRadius * screenRatio);
+        vortexEffect.radius = new Vector2(VortexRadius, VortexRadius * screenRatio) * BlackHole.transform.localScale.x;
     }
 
     static Vector3 RandomOnCircle(Vector3 center, float radius)
