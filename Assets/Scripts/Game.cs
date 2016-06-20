@@ -103,7 +103,7 @@ public class Game : MonoBehaviour
             newStar.transform.localScale = new Vector2(scale, scale);
             newStar.transform.parent = starsContainer.transform;
         }
-        */
+        
 
         Random.seed = (int)System.DateTime.Now.Ticks;
         var AsteroidBeltContainer = new GameObject("AsteroidBelt");
@@ -122,7 +122,8 @@ public class Game : MonoBehaviour
             newAsteroid.transform.parent = AsteroidBeltContainer.transform;
             newAsteroid.transform.DORotate(new Vector3(0f, 0f, 360f), Random.Range(2f, 5f), RotateMode.WorldAxisAdd).SetLoops(-1);
         }
-
+        */
+        var AsteroidBeltContainer = GameObject.Find("AsteroidBelt");
         AsteroidBeltContainer.transform.DORotate(new Vector3(0f, 0f, 360f), 30f, RotateMode.WorldAxisAdd)
             .SetEase(Ease.Linear)
             .SetLoops(-1);
